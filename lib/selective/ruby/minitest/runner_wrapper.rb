@@ -66,7 +66,7 @@ module Selective
         end
 
         def exit_status
-          failures.length.zero? ? 0 : 1
+          failures.reject(&:skipped?).length.zero? ? 0 : 1
         end
 
         def finish
