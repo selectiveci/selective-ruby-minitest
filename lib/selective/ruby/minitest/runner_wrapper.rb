@@ -107,7 +107,18 @@ module Selective
 
         def summary_reporter
           reporter.reporters.grep(::Minitest::SummaryReporter).first || # Minitest with no 3rd party reporter gems
-            reporter.reporters.first.send(:all_reporters)&.grep(::Minitest::Reporters::DefaultReporter)&.first # Minitest with minitest-reporters gem
+            delegate_summary_reporter || # Minitest with minitest-reporters gem (reporters wrapped in DelegateReporter)
+            nil
+        end
+
+        def delegate_summary_reporter
+          delegate = reporter.reporters.first
+          return unless delegate&.respond_to?(:all_reporters, true)
+
+          all = delegate.send(:all_reporters)
+          all&.grep(::Minitest::SummaryReporter)&.first ||
+            (defined?(::Minitest::Reporters::DefaultReporter) &&
+              all&.grep(::Minitest::Reporters::DefaultReporter)&.first)
         end
 
         def failures
