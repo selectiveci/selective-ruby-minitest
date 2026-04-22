@@ -3,7 +3,7 @@
 module Selective
   module Ruby
     module Minitest
-      VERSION = "0.1.2"
+      VERSION = "0.1.3"
     end
   end
 end
