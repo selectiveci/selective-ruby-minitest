@@ -34,6 +34,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency("zeitwerk", "~> 2.6.12")
   spec.add_dependency("selective-ruby-core", ">= 0.2.5")
 
+  # benchmark was removed from Ruby's default gems in 4.0.
+  spec.add_dependency("benchmark")
+
   # TODO: Do we really need rake? Most apps will have it, but we
   # can probably avoid it.
   spec.add_dependency("rake")

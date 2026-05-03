@@ -1,0 +1,24 @@
+base:
+  image: ubuntu:24.04
+  config: rwx/base 1.0.3
+
+tasks:
+  - key: code
+    call: git/clone 2.0.7
+    with:
+      repository: https://github.com/selectiveci/selective-ruby-minitest.git
+      ref: ${{ init.commit-sha }}
+      github-token: ${{ github.token }}
+
+  - key: ruby
+    call: ruby/install 1.2.27
+    with:
+      ruby-version: ${{ init.ruby-version }}
+
+  - key: bundle-install
+    use: [code, ruby]
+    run: bundle install
+
+  - key: rspec
+    use: bundle-install
+    run: bundle exec rspec
