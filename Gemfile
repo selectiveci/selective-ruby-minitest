@@ -13,6 +13,10 @@ gem "irb"
 
 gem "appraisal", "~> 2.5"
 
+gem "minitest", "~> 5.0", group: :test
+
+gem "rspec", "~> 3.12", group: :test
+
 gem "simplecov", require: false, group: :test
 
 if Dir.exist?(selective_ruby_core_path = "../selective-ruby-core")
