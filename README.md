@@ -39,12 +39,6 @@ If your CI provider is not listed, you can [set the required environment variabl
       runner-id: ${{ matrix.ci_node_index }}
 ```
 
-### Mint
-
-[View a full/working example](https://github.com/selectiveci/selective-ruby-minitest/blob/main/.mint/push.yml)
-
-[Create a secret](https://www.rwx.com/docs/mint/secrets) with your API key (`SELECTIVE_API_KEY`). Mint does not require any additional setup.
-
 ### CircleCI
 
 [View a full/working example](https://github.com/selectiveci/selective-ruby-minitest/blob/main/.circleci/config.yml)
@@ -72,7 +66,7 @@ Selective supports all CI providers. If your provider is not in the list above, 
 | Environment Variable    | Required? | Description                                                                                                              |
 | ----------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
 | SELECTIVE_API_KEY       | Yes       | The API Key provided when creating a suite in Selective.                                                                 |
-| SELECTIVE_PLATFORM      | Yes       | The CI Platform that the Selective client is running on. Example: mint, semaphore, etc.                                  |
+| SELECTIVE_PLATFORM      | Yes       | The CI Platform that the Selective client is running on. Example: semaphore, circleci, etc.                                  |
 | SELECTIVE_RUN_ID        | Yes       | A unique id for each run of the test suite that stays consistent between reruns but changes when new commits are pushed. |
 | SELECTIVE_RUN_ATTEMPT   | Yes       | A unique value for each rerun of a particular run/commit started from the CI provider.                                   |
 | SELECTIVE_RUNNER_ID     | Yes       | A unique id for each runner in CI that stays consistent between runs and reruns. Example: the index of the runner.       |
