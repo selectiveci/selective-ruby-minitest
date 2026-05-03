@@ -11,30 +11,12 @@ on:
       init:
         commit-sha: ${{ event.git.sha }}
 
-base:
-  image: ubuntu:24.04
-  config: rwx/base 1.0.3
-
 tasks:
-  - key: code
-    call: git/clone 2.0.7
-    with:
-      repository: https://github.com/selectiveci/selective-ruby-minitest.git
-      ref: ${{ init.commit-sha }}
-      github-token: ${{ github.token }}
-
-  - key: ruby
-    call: ruby/install 1.2.27
-    use: code
-    with:
-      ruby-version-file: .ruby-version
-    filter:
-      - .ruby-version
-
-  - key: bundle-install
-    use: [code, ruby]
-    run: bundle install
-
-  - key: rspec
-    use: bundle-install
-    run: bundle exec rspec
+  - key: tests
+    parallel:
+      matrix:
+        ruby-version: ["3.1.7", "3.2.9", "3.3.10", "3.4.9", "4.0.3"]
+    call: ${{ run.dir }}/test.yml
+    init:
+      commit-sha: ${{ init.commit-sha }}
+      ruby-version: ${{ parallel.ruby-version }}
