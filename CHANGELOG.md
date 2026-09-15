@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Re-running a test case in the same process (auto-retry, manual rerun) now replaces its earlier record in every reporter instead of appending a duplicate, so JUnit-style reports carry one entry per test and tools keyed on test identity (e.g. Captain) can reconcile retries
+
 ## [0.1.3] - 2026-04-21
 
 - Fix summary_reporter when minitest-reporters is active

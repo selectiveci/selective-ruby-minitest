@@ -135,6 +135,72 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
 
       expect(callback_calls.last[:status]).to eq("pending")
     end
+
+    context "when the same test case is run again in this process (auto-retry)" do
+      # Mirrors minitest-reporters' BaseReporter, the shape behind its JUnitReporter:
+      # StatisticsReporter counters plus a `tests` array holding every recorded result.
+      # (Loading the real gem here would activate its Minitest plugin for the whole
+      # spec process and rewrap every reporter, so we model the shape instead; the
+      # real gem is exercised end-to-end in ruby-demo.)
+      let(:recording_reporter_class) do
+        Class.new(::Minitest::StatisticsReporter) do
+          attr_accessor :tests
+
+          def start
+            super
+            self.tests = []
+          end
+
+          def record(test)
+            super
+            tests << test
+          end
+        end
+      end
+      let(:recording_reporter) { recording_reporter_class.new }
+      let(:passing_id) { runner_wrapper.test_map.detect { |_id, t| t[:method_name] == "test_passing" }.first }
+      let(:skipped_id) { runner_wrapper.test_map.detect { |_id, t| t[:method_name] == "test_skipped" }.first }
+
+      before do
+        recording_reporter.start
+        runner_wrapper.reporter << recording_reporter
+      end
+
+      it "still reports every attempt to Selective" do
+        runner_wrapper.run_test_cases([passing_id])
+        runner_wrapper.run_test_cases([passing_id])
+
+        expect(callback_calls.map { |c| c[:id] }).to eq([passing_id, passing_id])
+      end
+
+      it "replaces the earlier record in reporters that keep one per test" do
+        runner_wrapper.run_test_cases([passing_id])
+        runner_wrapper.run_test_cases([passing_id])
+
+        records = recording_reporter.tests.select { |t| t.name == "test_passing" }
+        expect(records.length).to eq(1)
+        expect(recording_reporter.count).to eq(1)
+      end
+
+      it "leaves other tests' records alone" do
+        other_id = runner_wrapper.test_map.detect { |_id, t| t[:method_name] == "test_also_passing" }.first
+
+        runner_wrapper.run_test_cases([passing_id, other_id])
+        runner_wrapper.run_test_cases([passing_id])
+
+        expect(recording_reporter.tests.map(&:name).sort).to eq(%w[test_also_passing test_passing])
+        expect(recording_reporter.count).to eq(2)
+      end
+
+      it "keeps the summary statistics to one run per test" do
+        runner_wrapper.run_test_cases([skipped_id])
+        runner_wrapper.run_test_cases([skipped_id])
+
+        summary = runner_wrapper.summary_reporter
+        expect(summary.count).to eq(1)
+        expect(summary.results.count { |r| r.name == "test_skipped" }).to eq(1)
+      end
+    end
   end
 
   describe "#remove_test_case_result" do
