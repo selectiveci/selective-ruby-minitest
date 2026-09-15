@@ -42,6 +42,7 @@ module Selective
         def run_test_cases(test_case_ids)
           test_case_ids.map do |test_id|
             klass, method_name = get_test_from_map(test_id)
+            discard_previous_results(klass, method_name)
             real_time = time { klass.run_one_method(klass, method_name, reporter) }
             foo = format_test_case(test_id, klass, method_name, real_time)
             test_case_callback.call(foo)
@@ -94,6 +95,76 @@ module Selective
 
         def time(&block)
           Benchmark.measure(&block).real
+        end
+
+        # Auto-retry (and a manual rerun) can hand a test case back to the very
+        # process that already ran it. Every reporter recorded that first attempt,
+        # so running it again without forgetting the first makes reporters that
+        # keep per-test records -- minitest-reporters' JUnitReporter, for example --
+        # emit the test twice with identical identity. Tools that key on test
+        # identity (Captain, for one) then hold a duplicate they can never
+        # reconcile: their own retries update one copy while the other stays
+        # failed, and the task can never go green. Drop the stale records first so
+        # only the latest attempt is reported, and keep the statistics counters
+        # honest about how many distinct tests ran.
+        def discard_previous_results(klass, method_name)
+          key = [klass.name, method_name]
+          previously_run = previous_runs.key?(key)
+          previous_runs[key] = true
+
+          all_reporters.each do |r|
+            stale = []
+
+            if r.respond_to?(:tests) && r.tests.is_a?(Array)
+              stale.concat(r.tests.select { |result| same_test?(result, klass, method_name) })
+              r.tests.reject! { |result| same_test?(result, klass, method_name) }
+            end
+
+            if r.respond_to?(:results) && r.results.is_a?(Array)
+              stale.concat(r.results.select { |result| same_test?(result, klass, method_name) })
+              r.results.reject! { |result| same_test?(result, klass, method_name) }
+            end
+
+            forget_statistics(r, stale.uniq, previously_run)
+          end
+        end
+
+        def previous_runs
+          @previous_runs ||= {}
+        end
+
+        # Every reporter in the composite, including the ones minitest-reporters
+        # hides behind its DelegateReporter (which can itself be nested).
+        def all_reporters(reporters = reporter.reporters, seen = {})
+          reporters.flat_map do |r|
+            next [] if seen[r.object_id]
+
+            seen[r.object_id] = true
+            nested = []
+            nested.concat(Array(r.send(:all_reporters))) if r.respond_to?(:all_reporters, true)
+            nested.concat(Array(r.reporters)) if r.respond_to?(:reporters)
+            [r, *all_reporters(nested, seen)]
+          end
+        end
+
+        def same_test?(result, klass, method_name)
+          result.respond_to?(:klass) && result.respond_to?(:name) &&
+            result.klass.to_s == klass.name && result.name == method_name
+        end
+
+        # Minitest::StatisticsReporter counts every recorded run, whether or not it
+        # kept the result object (it only keeps failures and skips). A previously
+        # passing test leaves nothing to find in `tests`/`results`, so the rerun
+        # itself is the signal that one count has to come off.
+        def forget_statistics(r, stale, previously_run)
+          if previously_run && r.respond_to?(:count) && r.respond_to?(:count=) && r.count.to_i.positive?
+            r.count -= 1
+          end
+
+          assertions = stale.sum { |result| result.respond_to?(:assertions) ? result.assertions.to_i : 0 }
+          if assertions.positive? && r.respond_to?(:assertions) && r.respond_to?(:assertions=)
+            r.assertions = [r.assertions.to_i - assertions, 0].max
+          end
         end
 
         def get_test_from_map(test_id)
