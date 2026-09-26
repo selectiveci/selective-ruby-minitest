@@ -43,7 +43,9 @@ module Selective
           test_case_ids.map do |test_id|
             klass, method_name = get_test_from_map(test_id)
             discard_previous_results(klass, method_name)
-            real_time = time { klass.run_one_method(klass, method_name, reporter) }
+            real_time = time do
+              with_test_map(test_id) { klass.run_one_method(klass, method_name, reporter) }
+            end
             foo = format_test_case(test_id, klass, method_name, real_time)
             test_case_callback.call(foo)
           end
@@ -95,6 +97,17 @@ module Selective
 
         def time(&block)
           Benchmark.measure(&block).real
+        end
+
+        # Records the files a test executes (setup and teardown included) when
+        # the server has asked for a test map; a plain pass-through otherwise
+        # and on older cores that predate test maps.
+        def with_test_map(test_id, &block)
+          if ::Selective::Ruby::Core.const_defined?(:TestMap)
+            ::Selective::Ruby::Core::TestMap.around(test_id, &block)
+          else
+            yield
+          end
         end
 
         # Auto-retry (and a manual rerun) can hand a test case back to the very
