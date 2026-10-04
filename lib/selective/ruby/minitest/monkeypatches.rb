@@ -43,7 +43,7 @@ module Selective
 
             reporter.report
 
-            return empty_run! options if summary && summary.count == 0
+            return empty_run! options if summary && summary.count == 0 && respond_to?(:empty_run!)
             reporter.passed?
           end
         end
