@@ -1,23 +1,18 @@
 base:
-  image: ubuntu:24.04
-  config: rwx/base 1.0.3
+  image: ruby:${{ init.ruby-version }}
+  config: none
 
 tasks:
   - key: code
-    call: git/clone 2.0.7
-    with:
-      repository: https://github.com/selectiveci/selective-ruby-minitest.git
-      ref: ${{ init.commit-sha }}
-      github-token: ${{ github.token }}
-
-  - key: ruby
-    call: ruby/install 1.2.27
-    with:
-      ruby-version: ${{ init.ruby-version }}
+    run: |
+      git init -q .
+      git fetch -q --depth 1 https://github.com/selectiveci/selective-ruby-minitest.git ${{ init.commit-sha }}
+      git checkout -q FETCH_HEAD
 
   - key: bundle-install
-    use: [code, ruby]
+    use: code
     run: |
+      ruby -v
       bundle install
       grep "^    minitest " Gemfile.lock
     env:
