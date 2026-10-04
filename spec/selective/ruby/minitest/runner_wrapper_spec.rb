@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "open3"
+
 RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
   let(:callback_calls) { [] }
   let(:test_case_callback) { ->(test_case) { callback_calls << test_case } }
@@ -206,6 +208,67 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
   describe "#remove_test_case_result" do
     it "no-ops gracefully when the test_id is unknown" do
       expect { runner_wrapper.remove_test_case_result("unknown") }.not_to raise_error
+    end
+
+    context "when driven through the controller in its own process" do
+      def drive(fixture, steps)
+        env = {"DEFAULT_TEST" => "spec/fixtures/colliding/#{fixture}", "DRIVER_STEPS" => JSON.dump(steps)}
+        output, status = Open3.capture2e(env, RbConfig.ruby, "spec/support/controller_driver.rb")
+        [output, status.exitstatus]
+      end
+
+      def results(output)
+        output.scan(/RESULT (\S+) (\w+)$/)
+      end
+
+      shared_examples "a removal scoped to its own class" do |fixture, alpha, beta|
+        it "keeps the other class's failure when one test is removed and rerun green" do
+          output, exit_code = drive(fixture, [
+            ["run_test_cases", [alpha, beta]],
+            ["remove_failed_test_case_result", beta],
+            ["run_test_cases", [beta]],
+            ["close"]
+          ])
+
+          expect(results(output)).to eq([[alpha, "failed"], [beta, "failed"], [beta, "passed"]])
+          expect(output).to include("1 failures").and include("#{alpha} [")
+          expect(output).not_to include("#{beta} [")
+          expect(exit_code).to eq(1)
+        end
+
+        it "exits 0 when the only failure is removed and rerun green" do
+          output, exit_code = drive(fixture, [
+            ["run_test_cases", [beta]],
+            ["remove_failed_test_case_result", beta],
+            ["run_test_cases", [beta]],
+            ["close"]
+          ])
+
+          expect(results(output)).to eq([[beta, "failed"], [beta, "passed"]])
+          expect(output).to include("0 failures")
+          expect(exit_code).to eq(0)
+        end
+      end
+
+      context "with two classes sharing a module's test" do
+        it_behaves_like "a removal scoped to its own class", "shared_module.rb", "AlphaTest#test_shared", "BetaTest#test_shared"
+
+        it "reports the class that still failed when the other passed on another runner" do
+          output, exit_code = drive("shared_module.rb", [
+            ["run_test_cases", ["AlphaTest#test_shared", "BetaTest#test_shared"]],
+            ["remove_failed_test_case_result", "BetaTest#test_shared"],
+            ["close"]
+          ])
+
+          expect(output).to include("1 failures").and include("AlphaTest#test_shared [")
+          expect(output).not_to include("BetaTest#test_shared [")
+          expect(exit_code).to eq(1)
+        end
+      end
+
+      context "with nested describes sharing an it description" do
+        it_behaves_like "a removal scoped to its own class", "nested_describe.rb", "Widget::alpha#test_0001_works", "Widget::beta#test_0001_works"
+      end
     end
   end
 end
