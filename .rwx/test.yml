@@ -17,8 +17,14 @@ tasks:
 
   - key: bundle-install
     use: [code, ruby]
-    run: bundle install
+    run: |
+      bundle install
+      grep "^    minitest " Gemfile.lock
+    env:
+      MINITEST_VERSION: ${{ init.minitest-version }}
 
   - key: rspec
     use: bundle-install
     run: bundle exec rspec
+    env:
+      MINITEST_VERSION: ${{ init.minitest-version }}

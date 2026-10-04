@@ -4,6 +4,7 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
   let(:callback_calls) { [] }
   let(:test_case_callback) { ->(test_case) { callback_calls << test_case } }
   let(:args) { [] }
+  let(:failing_id) { runner_wrapper.test_map.detect { |_id, t| t[:method_name] == "test_failing" }.first }
 
   let(:runner_wrapper) do
     dirty_dirty_unprivate_class(described_class).new(args, test_case_callback)
@@ -108,6 +109,40 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
     it "returns 0 when there are no failures" do
       expect(runner_wrapper.exit_status).to eq(0)
     end
+
+    it "returns 1 after a failing test" do
+      runner_wrapper.run_test_cases([failing_id])
+
+      expect(runner_wrapper.exit_status).to eq(1)
+    end
+
+    it "returns 0 when the only non-passing test was skipped" do
+      skipped_id = runner_wrapper.test_map.detect { |_id, t| t[:method_name] == "test_skipped" }.first
+
+      runner_wrapper.run_test_cases([skipped_id])
+
+      expect(runner_wrapper.exit_status).to eq(0)
+    end
+  end
+
+  describe "#finish" do
+    before do
+      allow(::Minitest).to receive(:parallel_executor).and_return(::Minitest::Parallel::Executor.new(1))
+    end
+
+    it "reports the run and calls Minitest's after_run hooks" do
+      after_runs = ::Minitest.class_variable_get(:@@after_run)
+      hook_calls = []
+      hook = -> { hook_calls << :called }
+      after_runs << hook
+
+      runner_wrapper.run_test_cases([failing_id])
+
+      expect { runner_wrapper.finish }.to output(/1 runs, 1 assertions, 1 failures/).to_stdout_from_any_process
+      expect(hook_calls).to eq([:called])
+    ensure
+      after_runs.delete(hook)
+    end
   end
 
   describe "#run_test_cases" do
@@ -125,6 +160,13 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
         status: "passed"
       )
       expect(result[:run_time]).to be_a(Numeric)
+    end
+
+    it "marks failing tests as failed with the assertion message" do
+      runner_wrapper.run_test_cases([failing_id])
+
+      expect(callback_calls.last).to include(id: failing_id, status: "failed")
+      expect(callback_calls.last[:failure_message_lines].join("\n")).to include("Expected: 3")
     end
 
     it "marks skipped tests as pending" do
@@ -206,6 +248,16 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
   describe "#remove_test_case_result" do
     it "no-ops gracefully when the test_id is unknown" do
       expect { runner_wrapper.remove_test_case_result("unknown") }.not_to raise_error
+    end
+
+    context "after a failing run" do
+      it "drops the failure so it no longer fails the build" do
+        runner_wrapper.run_test_cases([failing_id])
+
+        runner_wrapper.remove_test_case_result(failing_id)
+
+        expect(runner_wrapper.exit_status).to eq(0)
+      end
     end
   end
 end

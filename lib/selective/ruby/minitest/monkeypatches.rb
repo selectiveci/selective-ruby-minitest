@@ -10,7 +10,9 @@ module Selective
 
           # This is the first half of Minitest.run
           def selective_prerun(args = [])
-            load_plugins unless args.delete("--no-plugins") || ENV["MT_NO_PLUGINS"]
+            if ::Minitest::VERSION.to_i < 6
+              load_plugins unless args.delete("--no-plugins") || ENV["MT_NO_PLUGINS"]
+            end
 
             options = process_args args
 
