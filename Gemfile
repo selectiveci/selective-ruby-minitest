@@ -15,6 +15,8 @@ gem "appraisal", "~> 2.5"
 
 gem "minitest", ENV.fetch("MINITEST_VERSION", "~> 5.0"), group: :test
 
+gem "mutex_m", group: :test
+
 gem "rspec", "~> 3.12", group: :test
 
 gem "simplecov", require: false, group: :test
