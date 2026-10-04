@@ -36,7 +36,7 @@ module Selective
           def selective_postrun(reporter, args = [])
             options = process_args args
 
-            parallel_executor.shutdown
+            parallel_executor.shutdown if parallel_executor.respond_to?(:shutdown)
 
             # might have been removed/replaced during init_plugins:
             summary = reporter.reporters.grep(::Minitest::SummaryReporter).first

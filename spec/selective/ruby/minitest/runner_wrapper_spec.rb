@@ -143,6 +143,12 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
     ensure
       after_runs.delete(hook)
     end
+
+    it "finishes when minitest runs single-threaded and leaves no parallel executor" do
+      allow(::Minitest).to receive(:parallel_executor).and_return(nil)
+
+      expect { runner_wrapper.finish }.to output(/0 runs/).to_stdout_from_any_process
+    end
   end
 
   describe "#run_test_cases" do
