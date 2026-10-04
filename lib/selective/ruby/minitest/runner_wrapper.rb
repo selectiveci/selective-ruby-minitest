@@ -55,10 +55,7 @@ module Selective
           test = test_map[test_case_id]
           return unless test
 
-          result = summary_reporter.results.detect do |r|
-            r.source_location.first.gsub(root_path, "") == test[:file_path] &&
-              r.name == test[:method_name]
-          end
+          result = summary_reporter.results.detect { |r| same_test?(r, test[:klass], test[:method_name]) }
 
           return unless result
 

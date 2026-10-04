@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+- Removing a test case result (when the server retries a test) now matches on the test class as well as the method name, so two tests sharing a file and method name (a module included in two classes, nested describes with the same `it` text) no longer clear each other's failure and turn a failing run green
+
 ## [0.1.4] - 2026-09-29
 
 - Trace each test (setup and teardown included) for test maps when the server asks; a pass-through otherwise and with cores older than 0.2.10
