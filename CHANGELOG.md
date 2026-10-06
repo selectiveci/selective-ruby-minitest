@@ -6,6 +6,10 @@
 - Declare the supported minitest range (`>= 5.16`, `< 7`); 5.16 is the first release with `Minitest.seed`, which the runner relies on
 - **Breaking:** `required_ruby_version` is now `>= 2.7.0` (was `>= 2.6.0`); CI tests Ruby 2.7.8 through 4.0.7
 
+## [0.1.5] - 2026-10-03
+
+- Removing a test case result (when the server retries a test) now matches on the test class as well as the method name, so two tests sharing a file and method name (a module included in two classes, nested describes with the same `it` text) no longer clear each other's failure and turn a failing run green
+
 ## [0.1.4] - 2026-09-29
 
 - Trace each test (setup and teardown included) for test maps when the server asks; a pass-through otherwise and with cores older than 0.2.10
