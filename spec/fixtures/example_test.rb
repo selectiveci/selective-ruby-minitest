@@ -15,4 +15,8 @@ class ExampleTest < ::Minitest::Test
   def test_skipped
     skip "skipping for fixture purposes"
   end
+
+  def test_failing
+    assert_equal 3, 1 + 1
+  end
 end

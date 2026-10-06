@@ -10,7 +10,9 @@ module Selective
 
           # This is the first half of Minitest.run
           def selective_prerun(args = [])
-            load_plugins unless args.delete("--no-plugins") || ENV["MT_NO_PLUGINS"]
+            if ::Minitest::VERSION.to_i < 6
+              load_plugins unless args.delete("--no-plugins") || ENV["MT_NO_PLUGINS"]
+            end
 
             options = process_args args
 
@@ -34,14 +36,14 @@ module Selective
           def selective_postrun(reporter, args = [])
             options = process_args args
 
-            parallel_executor.shutdown
+            parallel_executor.shutdown if parallel_executor.respond_to?(:shutdown)
 
             # might have been removed/replaced during init_plugins:
             summary = reporter.reporters.grep(::Minitest::SummaryReporter).first
 
             reporter.report
 
-            return empty_run! options if summary && summary.count == 0
+            return empty_run! options if summary && summary.count == 0 && respond_to?(:empty_run!)
             reporter.passed?
           end
         end

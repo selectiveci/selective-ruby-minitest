@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.summary = "Selective Ruby Minitest Client"
   spec.description = "Selective is an intelligent test runner for your current CI provider. Get real-time test results, intelligent ordering based on code changes, shorter run times, automatic flake detection, the ability to re-enqueue failed tests, and more."
   spec.homepage = "https://www.selective.ci"
-  spec.required_ruby_version = ">= 2.6.0"
+  spec.required_ruby_version = ">= 2.7.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "http://github.com/selectiveci/selective-ruby-minitest"
@@ -40,6 +40,8 @@ Gem::Specification.new do |spec|
   # TODO: Do we really need rake? Most apps will have it, but we
   # can probably avoid it.
   spec.add_dependency("rake")
+
+  spec.add_dependency("minitest", ">= 5.16", "< 7")
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

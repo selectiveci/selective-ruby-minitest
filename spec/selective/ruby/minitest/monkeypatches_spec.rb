@@ -26,5 +26,23 @@ RSpec.describe Selective::Ruby::Minitest::Monkeypatches do
       expect(reporter).to be_a(::Minitest::CompositeReporter)
       expect(reporter.reporters).to include(an_instance_of(::Minitest::SummaryReporter))
     end
+
+    context "plugin loading" do
+      around do |example|
+        extensions = ::Minitest.extensions.dup
+        ::Minitest.extensions.clear
+        example.run
+      ensure
+        ::Minitest.extensions.replace(extensions)
+      end
+
+      it "autoloads installed plugins like Minitest.run on minitest 5", if: ::Minitest::VERSION.to_i < 6 do
+        expect { ::Minitest.selective_prerun([]) }.to change { ::Minitest.extensions.length }
+      end
+
+      it "loads only the plugins the suite opted into on minitest 6", if: ::Minitest::VERSION.to_i >= 6 do
+        expect { ::Minitest.selective_prerun([]) }.not_to change { ::Minitest.extensions.dup }
+      end
+    end
   end
 end

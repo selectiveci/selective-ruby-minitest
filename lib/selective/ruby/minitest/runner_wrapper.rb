@@ -44,7 +44,7 @@ module Selective
             klass, method_name = get_test_from_map(test_id)
             discard_previous_results(klass, method_name)
             real_time = time do
-              with_test_map(test_id) { klass.run_one_method(klass, method_name, reporter) }
+              with_test_map(test_id) { run_test(klass, method_name) }
             end
             foo = format_test_case(test_id, klass, method_name, real_time)
             test_case_callback.call(foo)
@@ -91,6 +91,14 @@ module Selective
         end
 
         private
+
+        def run_test(klass, method_name)
+          if klass.respond_to?(:run_one_method)
+            klass.run_one_method(klass, method_name, reporter)
+          else
+            klass.run(klass, method_name, reporter)
+          end
+        end
 
         def time(&block)
           Benchmark.measure(&block).real
