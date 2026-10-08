@@ -1,13 +1,12 @@
 ## [Unreleased]
 
+## [0.1.5] - 2026-10-07
+
 - Support minitest 6: run each test through `Runnable.run` when `Runnable.run_one_method` no longer exists, and leave plugin loading to the suite as minitest 6's own runner does
 - Fix a crash in `finish` when minitest runs single-threaded (`MT_CPU=1` or a one-CPU runner) and so never creates a parallel executor; minitest 5.27 and 6 both skip creating it
 - Fix a crash in `finish` when no test ran on minitest older than 5.22, which has no `Minitest.empty_run!`
 - Declare the supported minitest range (`>= 5.16`, `< 7`); 5.16 is the first release with `Minitest.seed`, which the runner relies on
 - **Breaking:** `required_ruby_version` is now `>= 2.7.0` (was `>= 2.6.0`); CI tests Ruby 2.7.8 through 4.0.7
-
-## [0.1.5] - 2026-10-03
-
 - Removing a test case result (when the server retries a test) now matches on the test class as well as the method name, so two tests sharing a file and method name (a module included in two classes, nested describes with the same `it` text) no longer clear each other's failure and turn a failing run green
 
 ## [0.1.4] - 2026-09-29
