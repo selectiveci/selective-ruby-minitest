@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+- Fix a crash building the test manifest when test files are passed on the command line (`selective minitest test/models/user_test.rb`); the run now covers the tests those files load
+- Fix changed test files never being prioritized: `base_test_path` is now `test` rather than `./test`, so the core's match against `git diff` paths (`test/...`) finds them, as rspec's `spec` does
+
 ## [0.1.5] - 2026-10-07
 
 - Support minitest 6: run each test through `Runnable.run` when `Runnable.run_one_method` no longer exists, and leave plugin loading to the suite as minitest 6's own runner does

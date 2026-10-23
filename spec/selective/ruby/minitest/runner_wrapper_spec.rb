@@ -81,11 +81,22 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
         expect(result["test_cases"].first[:id]).to eq(target_id)
       end
     end
+
+    context "when test files are given instead of test ids" do
+      let(:args) { ["spec/fixtures/example_test.rb"] }
+
+      it "lists every test the run loaded" do
+        ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
+
+        expect(ids).to match_array(runner_wrapper.test_ids)
+        expect(ids.grep(%r{\Aspec/fixtures/example_test\.rb:}).size).to eq(4)
+      end
+    end
   end
 
   describe "#base_test_path" do
     it "returns the leading directory of the default test glob" do
-      expect(runner_wrapper.base_test_path).to eq("./spec")
+      expect(runner_wrapper.base_test_path).to eq("spec")
     end
   end
 
