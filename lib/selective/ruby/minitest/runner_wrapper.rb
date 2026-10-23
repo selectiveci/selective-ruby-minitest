@@ -63,7 +63,7 @@ module Selective
         end
 
         def base_test_path
-          Pathname(default_test_glob).each_filename.first
+          normalize_path(default_test_glob).each_filename.first
         end
 
         def exit_status
