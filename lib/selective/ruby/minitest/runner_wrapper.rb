@@ -92,8 +92,12 @@ module Selective
         private
 
         def manifest_test_ids
-          targeted = targeted_test_ids.any? && targeted_test_ids.all? { |id| test_map.key?(id) }
-          targeted ? targeted_test_ids : test_ids
+          exact_ids, file_targets = targeted_test_ids.partition { |target| test_map.key?(target) }
+          return test_ids if exact_ids.empty?
+
+          file_paths = file_targets.map { |target| File.expand_path(target) }
+          file_test_ids = test_ids.select { |id| file_paths.include?(File.expand_path(test_map[id][:file_path])) }
+          (exact_ids + file_test_ids).uniq
         end
 
         def run_test(klass, method_name)

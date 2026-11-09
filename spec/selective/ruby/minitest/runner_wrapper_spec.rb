@@ -92,6 +92,30 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
         expect(ids.grep(%r{\Aspec/fixtures/example_test\.rb:}).size).to eq(4)
       end
     end
+
+    context "when a test id and a test file are mixed" do
+      let(:exact_id) { "spec/fixtures/example_test.rb:#{Digest::MD5.hexdigest("ExampleTest#test_passing")}" }
+      let(:args) { [exact_id, "spec/fixtures/second_example.rb"] }
+
+      it "keeps the id exact and expands the file to its own tests" do
+        ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
+
+        expect(ids).to match_array([
+          exact_id,
+          "spec/fixtures/second_example.rb:#{Digest::MD5.hexdigest("SecondExample#test_second_one")}",
+          "spec/fixtures/second_example.rb:#{Digest::MD5.hexdigest("SecondExample#test_second_two")}"
+        ])
+      end
+
+      it "lists a test once when its id and its file are both given" do
+        runner_wrapper.instance_variable_set(:@targeted_test_ids, [exact_id, "./spec/fixtures/example_test.rb"])
+
+        ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
+
+        expect(ids.size).to eq(4)
+        expect(ids.uniq).to eq(ids)
+      end
+    end
   end
 
   describe "#base_test_path" do
