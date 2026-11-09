@@ -26,9 +26,8 @@ module Selective
         def manifest
           raise_test_manifest_error("No test cases found") if test_ids.empty?
 
-          ids = @targeted_test_ids.any? ? @targeted_test_ids : test_ids
           {
-            "test_cases" => ids.map do |test_id|
+            "test_cases" => manifest_test_ids.map do |test_id|
               test = test_map[test_id]
               {
                 id: test_id,
@@ -64,7 +63,7 @@ module Selective
         end
 
         def base_test_path
-          "./#{default_test_glob.split("/").first}"
+          normalize_path(default_test_glob).each_filename.first
         end
 
         def exit_status
@@ -91,6 +90,15 @@ module Selective
         end
 
         private
+
+        def manifest_test_ids
+          exact_ids, file_targets = targeted_test_ids.partition { |target| test_map.key?(target) }
+          return test_ids if exact_ids.empty?
+
+          file_paths = file_targets.map { |target| File.expand_path(target) }
+          file_test_ids = test_ids.select { |id| file_paths.include?(File.expand_path(test_map[id][:file_path])) }
+          (exact_ids + file_test_ids).uniq
+        end
 
         def run_test(klass, method_name)
           if klass.respond_to?(:run_one_method)
@@ -289,7 +297,7 @@ module Selective
         end
 
         def normalize_path(path)
-          Pathname.new(path).relative_path_from("./")
+          Pathname.new(File.expand_path(path)).relative_path_from(Dir.pwd)
         end
 
         def raise_test_manifest_error(output)
