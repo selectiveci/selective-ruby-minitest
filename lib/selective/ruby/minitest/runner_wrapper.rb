@@ -293,7 +293,7 @@ module Selective
         end
 
         def normalize_path(path)
-          Pathname.new(path).relative_path_from("./")
+          Pathname.new(File.expand_path(path)).relative_path_from(Dir.pwd)
         end
 
         def raise_test_manifest_error(output)

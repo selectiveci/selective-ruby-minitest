@@ -104,6 +104,12 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
 
       expect(runner_wrapper.base_test_path).to eq("spec")
     end
+
+    it "accepts an absolute glob" do
+      allow(runner_wrapper).to receive(:default_test_glob).and_return(File.join(Dir.pwd, "spec/fixtures/**/*_test.rb"))
+
+      expect(runner_wrapper.base_test_path).to eq("spec")
+    end
   end
 
   describe "#framework" do
