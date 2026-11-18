@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+## [0.1.6] - 2026-11-18
+
+- Allow zeitwerk 2.7 and 2.8. The `~> 2.6.12` pin made Rails apps on current zeitwerk downgrade their autoloader to install Selective.
+
 ## [0.1.5] - 2026-10-07
 
 - Support minitest 6: run each test through `Runnable.run` when `Runnable.run_one_method` no longer exists, and leave plugin loading to the suite as minitest 6's own runner does
