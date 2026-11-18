@@ -11,6 +11,9 @@ gem "standard", "~> 1.3"
 
 gem "irb"
 
+# Bundler on Ruby < 3.3 picks prism 2.x platform gems that require Ruby 3.3.
+gem "prism", "< 2" if RUBY_VERSION < "3.3"
+
 gem "appraisal", "~> 2.5"
 
 gem "minitest", ENV.fetch("MINITEST_VERSION", "~> 5.0"), group: :test
