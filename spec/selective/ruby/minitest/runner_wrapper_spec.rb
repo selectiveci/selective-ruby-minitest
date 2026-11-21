@@ -51,6 +51,19 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
     end
   end
 
+  describe "#targeted?" do
+    let(:klass) { dirty_dirty_unprivate_class(described_class).tap { |k| allow_any_instance_of(k).to receive(:configure) } }
+
+    it "is false for the whole suite" do
+      expect(klass.new([], test_case_callback).targeted?).to be(false)
+      expect(klass.new(["test"], test_case_callback).targeted?).to be(false)
+    end
+
+    it "is true for named test files" do
+      expect(klass.new(["test/models/user_test.rb"], test_case_callback).targeted?).to be(true)
+    end
+  end
+
   describe "#manifest" do
     it "returns a hash with test_cases" do
       result = runner_wrapper.manifest
@@ -128,10 +141,6 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
   end
 
   describe "#finish" do
-    before do
-      allow(::Minitest).to receive(:parallel_executor).and_return(::Minitest::Parallel::Executor.new(1))
-    end
-
     it "reports the run and calls Minitest's after_run hooks" do
       after_runs = ::Minitest.class_variable_get(:@@after_run)
       hook_calls = []
