@@ -78,6 +78,17 @@ module Selective
           ::Minitest.class_variable_get(:@@after_run).reverse_each(&:call)
         end
 
+        # Workers to fork when the suite asked Rails or minitest-parallel_fork
+        # for parallelism: `[count, source]`, or nil.
+        def default_workers
+          Parallelism.requested
+        end
+
+        # Whether the command named tests narrower than the whole suite.
+        def targeted?
+          targeted_test_ids.any? { |id| id.sub(%r{\A\./}, "").chomp("/") != DEFAULT_TEST_DIR }
+        end
+
         def framework
           RunnerWrapper::FRAMEWORK
         end

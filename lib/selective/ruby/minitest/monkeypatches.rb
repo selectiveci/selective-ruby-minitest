@@ -27,7 +27,7 @@ module Selective
             init_plugins options.merge(report_name: ->(name) { "report-#{name}-#{SecureRandom.uuid}.xml" })
             self.reporter = nil # runnables shouldn't depend on the reporter, ever
 
-            parallel_executor.start if parallel_executor.respond_to?(:start)
+            Selective::Ruby::Minitest::Parallelism.take_over!
             reporter.start
             reporter
           end

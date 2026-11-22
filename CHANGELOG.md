@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+- Fix Rails `parallelize` and `parallelize_me!` under Selective. Their executors handed each test to a forked worker or a thread and returned at once, so Selective recorded every test as passed in about 0 seconds, retried nothing and recorded an empty test map; CI's exit status was still right. Tests now always run in the process that traces and reports them.
+- Use the parallelism the suite asked for as Selective workers (selective-ruby-core 0.4.0 or newer): Rails `parallelize` (same worker count, threshold and `PARALLEL_WORKERS`, with or without `with: :threads`) and minitest-parallel_fork (`NCPU`; `before_parallel_fork` runs once in worker 0 and `after_parallel_fork` in each worker). `parallelize_me!` alone runs in one process unless `SELECTIVE_WORKERS` is set.
+
 ## [0.1.6] - 2026-11-18
 
 - Allow zeitwerk 2.7 and 2.8. The `~> 2.6.12` pin made Rails apps on current zeitwerk downgrade their autoloader to install Selective.
