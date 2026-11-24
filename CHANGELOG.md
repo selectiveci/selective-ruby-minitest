@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+- Fix a crash building the test manifest when test files are passed on the command line (`selective minitest test/models/user_test.rb`); the run now covers the tests those files load. A mix of test ids and test files, or a test id that matches no test, now stops with a manifest error instead of crashing
+- Fix changed test files never being prioritized: `base_test_path` is now `test` rather than `./test`, so the core's match against `git diff` paths (`test/...`) finds them, as rspec's `spec` does
+
 ## [0.1.6] - 2026-11-18
 
 - Allow zeitwerk 2.7 and 2.8. The `~> 2.6.12` pin made Rails apps on current zeitwerk downgrade their autoloader to install Selective.

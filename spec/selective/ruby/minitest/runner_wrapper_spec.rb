@@ -81,11 +81,78 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
         expect(result["test_cases"].first[:id]).to eq(target_id)
       end
     end
+
+    context "when test files are given instead of test ids" do
+      let(:args) { ["spec/fixtures/example_test.rb"] }
+
+      it "lists every test the run loaded" do
+        ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
+
+        expect(ids).to match_array(runner_wrapper.test_ids)
+        expect(ids.grep(%r{\Aspec/fixtures/example_test\.rb:}).size).to eq(4)
+      end
+    end
+
+    context "when a test id and a test file are mixed" do
+      let(:exact_id) { "spec/fixtures/example_test.rb:#{Digest::MD5.hexdigest("ExampleTest#test_passing")}" }
+      let(:args) { [exact_id, "spec/fixtures/example_test.rb"] }
+
+      it "raises a TestManifestError" do
+        expect { runner_wrapper.manifest }.to raise_error(described_class::TestManifestError, /not both/)
+      end
+    end
+
+    context "when a test id matches no test" do
+      let(:stale_id) { "spec/fixtures/example_test.rb:#{Digest::MD5.hexdigest("ExampleTest#test_renamed")}" }
+      let(:args) { [stale_id] }
+
+      it "raises a TestManifestError naming the id" do
+        expect { runner_wrapper.manifest }.to raise_error(
+          described_class::TestManifestError, /No test matches these ids: #{Regexp.escape(stale_id)}/
+        )
+      end
+    end
+
+    context "when a test id is a key outside the working directory" do
+      let(:outside_id) { "/elsewhere/shared_test.rb:#{Digest::MD5.hexdigest("SharedTest#test_shared")}" }
+
+      it "keeps it as given" do
+        runner_wrapper.test_map[outside_id] = runner_wrapper.test_map.values.first
+        runner_wrapper.instance_variable_set(:@targeted_test_ids, [outside_id])
+
+        ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
+
+        expect(ids).to eq([outside_id])
+      end
+    end
+
+    context "when a test id starts with ./" do
+      let(:exact_id) { "spec/fixtures/example_test.rb:#{Digest::MD5.hexdigest("ExampleTest#test_passing")}" }
+      let(:args) { ["./#{exact_id}"] }
+
+      it "keeps it exact" do
+        ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
+
+        expect(ids).to eq([exact_id])
+      end
+    end
   end
 
   describe "#base_test_path" do
     it "returns the leading directory of the default test glob" do
-      expect(runner_wrapper.base_test_path).to eq("./spec")
+      expect(runner_wrapper.base_test_path).to eq("spec")
+    end
+
+    it "ignores a leading ./ in the glob" do
+      allow(runner_wrapper).to receive(:default_test_glob).and_return("./spec/fixtures/**/*_test.rb")
+
+      expect(runner_wrapper.base_test_path).to eq("spec")
+    end
+
+    it "accepts an absolute glob" do
+      allow(runner_wrapper).to receive(:default_test_glob).and_return(File.join(Dir.pwd, "spec/fixtures/**/*_test.rb"))
+
+      expect(runner_wrapper.base_test_path).to eq("spec")
     end
   end
 
