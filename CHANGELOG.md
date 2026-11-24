@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-24
+
 - Fix a crash building the test manifest when test files are passed on the command line (`selective minitest test/models/user_test.rb`); the run now covers the tests those files load. A mix of test ids and test files, or a test id that matches no test, now stops with a manifest error instead of crashing
 - Fix changed test files never being prioritized: `base_test_path` is now `test` rather than `./test`, so the core's match against `git diff` paths (`test/...`) finds them, as rspec's `spec` does
 
