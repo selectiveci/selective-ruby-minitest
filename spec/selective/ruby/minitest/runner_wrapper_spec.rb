@@ -95,25 +95,32 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
 
     context "when a test id and a test file are mixed" do
       let(:exact_id) { "spec/fixtures/example_test.rb:#{Digest::MD5.hexdigest("ExampleTest#test_passing")}" }
-      let(:args) { [exact_id, "spec/fixtures/second_example.rb"] }
+      let(:args) { [exact_id, "spec/fixtures/example_test.rb"] }
 
-      it "keeps the id exact and expands the file to its own tests" do
-        ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
-
-        expect(ids).to match_array([
-          exact_id,
-          "spec/fixtures/second_example.rb:#{Digest::MD5.hexdigest("SecondExample#test_second_one")}",
-          "spec/fixtures/second_example.rb:#{Digest::MD5.hexdigest("SecondExample#test_second_two")}"
-        ])
+      it "raises a TestManifestError" do
+        expect { runner_wrapper.manifest }.to raise_error(described_class::TestManifestError, /not both/)
       end
+    end
 
-      it "lists a test once when its id and its file are both given" do
-        runner_wrapper.instance_variable_set(:@targeted_test_ids, [exact_id, "./spec/fixtures/example_test.rb"])
+    context "when a test id matches no test" do
+      let(:stale_id) { "spec/fixtures/example_test.rb:#{Digest::MD5.hexdigest("ExampleTest#test_renamed")}" }
+      let(:args) { [stale_id] }
 
+      it "raises a TestManifestError naming the id" do
+        expect { runner_wrapper.manifest }.to raise_error(
+          described_class::TestManifestError, /No test matches these ids: #{Regexp.escape(stale_id)}/
+        )
+      end
+    end
+
+    context "when a test id starts with ./" do
+      let(:exact_id) { "spec/fixtures/example_test.rb:#{Digest::MD5.hexdigest("ExampleTest#test_passing")}" }
+      let(:args) { ["./#{exact_id}"] }
+
+      it "keeps it exact" do
         ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
 
-        expect(ids.size).to eq(4)
-        expect(ids.uniq).to eq(ids)
+        expect(ids).to eq([exact_id])
       end
     end
   end

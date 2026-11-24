@@ -13,6 +13,7 @@ module Selective
 
         FRAMEWORK = "minitest"
         DEFAULT_TEST_DIR = "test"
+        TEST_ID = /:\h{32}\z/
 
         def initialize(args, test_case_callback)
           @test_case_callback = test_case_callback
@@ -92,12 +93,19 @@ module Selective
         private
 
         def manifest_test_ids
-          exact_ids, file_targets = targeted_test_ids.partition { |target| test_map.key?(target) }
-          return test_ids if exact_ids.empty?
+          ids, files = targeted_test_ids.partition { |target| target.match?(TEST_ID) }
+          return test_ids if ids.empty?
 
-          file_paths = file_targets.map { |target| File.expand_path(target) }
-          file_test_ids = test_ids.select { |id| file_paths.include?(File.expand_path(test_map[id][:file_path])) }
-          (exact_ids + file_test_ids).uniq
+          raise_test_manifest_error("Pass test ids or test files, not both: #{files.join(", ")}") if files.any?
+
+          ids = ids.map do |id|
+            path, _, digest = id.rpartition(":")
+            "#{normalize_path(path)}:#{digest}"
+          end
+          missing = ids.reject { |id| test_map.key?(id) }
+          raise_test_manifest_error("No test matches these ids: #{missing.join(", ")}") if missing.any?
+
+          ids.uniq
         end
 
         def run_test(klass, method_name)
