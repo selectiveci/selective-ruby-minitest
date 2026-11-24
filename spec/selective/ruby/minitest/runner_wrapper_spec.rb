@@ -113,6 +113,19 @@ RSpec.describe Selective::Ruby::Minitest::RunnerWrapper do
       end
     end
 
+    context "when a test id is a key outside the working directory" do
+      let(:outside_id) { "/elsewhere/shared_test.rb:#{Digest::MD5.hexdigest("SharedTest#test_shared")}" }
+
+      it "keeps it as given" do
+        runner_wrapper.test_map[outside_id] = runner_wrapper.test_map.values.first
+        runner_wrapper.instance_variable_set(:@targeted_test_ids, [outside_id])
+
+        ids = runner_wrapper.manifest["test_cases"].map { |test_case| test_case[:id] }
+
+        expect(ids).to eq([outside_id])
+      end
+    end
+
     context "when a test id starts with ./" do
       let(:exact_id) { "spec/fixtures/example_test.rb:#{Digest::MD5.hexdigest("ExampleTest#test_passing")}" }
       let(:args) { ["./#{exact_id}"] }

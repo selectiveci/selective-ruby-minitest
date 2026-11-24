@@ -99,6 +99,8 @@ module Selective
           raise_test_manifest_error("Pass test ids or test files, not both: #{files.join(", ")}") if files.any?
 
           ids = ids.map do |id|
+            next id if test_map.key?(id)
+
             path, _, digest = id.rpartition(":")
             "#{normalize_path(path)}:#{digest}"
           end
